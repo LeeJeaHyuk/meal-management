@@ -5,7 +5,8 @@
   "intentional_adaptations": [
     "Public Python package name meal_management",
     "Catalog cache lock moved into package, no private orchestration import",
-    "Test imports updated to public package"
+    "Test imports updated to public package",
+    "Source/data guard supports the flat public package and an enclosing code Git when used as a submodule"
   ],
   "excluded": [
     "benchmarks",
@@ -31,7 +32,7 @@
       "path": "meal_management/catalog.py",
       "source_group": "reviewed meal domain CLI",
       "source_sha256": "bcd4106ca3149b4149b34c0e2628209365064c08528a02da844f5044cad5db4a",
-      "export_sha256": "bcd4106ca3149b4149b34c0e2628209365064c08528a02da844f5044cad5db4a"
+      "export_sha256": "e22c58bb1aae55836172b76179f381f02f53b4c8330f1f768c1642e34fffb0a2"
     },
     {
       "path": "meal_management/catalog_git.py",
@@ -61,7 +62,7 @@
       "path": "tests/test_meal_harness.py",
       "source_group": "reviewed meal domain CLI",
       "source_sha256": "aa971d4f12d6d286effaaccdec972c318fc95ccc00c28c0d0e23f04796014fd3",
-      "export_sha256": "fa3e933fa939eea0d13ce85e7a7bbaf165449c545bc779e378f73b93fbeedb61"
+      "export_sha256": "94b80f87105dc3b73257d12283cf4edb564c84051a9e6b0ded28a38a004bff3b"
     },
     {
       "path": "tests/test_meal_statistics.py",

@@ -351,6 +351,18 @@ class MealMechanismTests(unittest.TestCase):
             self.journal.finish_delivery(claim["delivery_id"], "failed")
         self.assertFalse(self.journal.claim_delivery(report_hash, "protocol-recipient")["claimed"])
 
+    def test_enclosing_orchestrator_code_git_is_not_a_data_root(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / ".git").mkdir()
+            (root / "harnesses").mkdir()
+            with self.assertRaisesRegex(ValueError, "data_inside_code"):
+                data_path(root / "personal-inputs")
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / ".git").mkdir()
+            self.assertEqual(data_path(root / "proposals"), root / "proposals")
+
     def test_source_tree_cannot_be_a_data_root(self):
         with self.assertRaisesRegex(ValueError, "data_inside_code"):
             data_path(Path(__file__).resolve().parents[1] / "runtime")

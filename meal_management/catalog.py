@@ -43,9 +43,13 @@ def data_path(path):
         if part.is_symlink():
             raise ValueError("symlink_data_path")
     path = path.resolve()
-    repo = Path(__file__).resolve().parents[2]
+    repo = Path(__file__).resolve().parent.parent
     if path == repo or repo in path.parents:
         raise ValueError("data_inside_code_repository")
+    for ancestor in (path, *path.parents):
+        if ((ancestor / ".git").exists()
+                and any((ancestor / name).is_dir() for name in ("meal_management", "harnesses"))):
+            raise ValueError("data_inside_code_repository")
     return path
 
 
