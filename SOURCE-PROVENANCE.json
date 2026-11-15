@@ -1,0 +1,79 @@
+{
+  "schema": "meal-domain-public-extraction/v1",
+  "source_commit": "4bb5fb1770f87babb4390aa5fd7d3107a0a19191",
+  "scope": "meal domain only, clean source export without previous Git history",
+  "intentional_adaptations": [
+    "Public Python package name meal_management",
+    "Catalog cache lock moved into package, no private orchestration import",
+    "Test imports updated to public package"
+  ],
+  "excluded": [
+    "benchmarks",
+    "provider/gateway/credentials",
+    "OCR runtime",
+    "OpenBot/Telegram/cron adapters",
+    "user data and host configuration"
+  ],
+  "files": [
+    {
+      "path": "meal_management/__init__.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "6bb4a7fdefbc82ad7fa4a12d5615d1f84824dd8c5ddaa853eaa54b060b4c49c8",
+      "export_sha256": "6bb4a7fdefbc82ad7fa4a12d5615d1f84824dd8c5ddaa853eaa54b060b4c49c8"
+    },
+    {
+      "path": "meal_management/__main__.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "d9ff294b6c45f85ac03d94b607d42f5ecf4a3c886d54270e02789e7f56d253a2",
+      "export_sha256": "d9ff294b6c45f85ac03d94b607d42f5ecf4a3c886d54270e02789e7f56d253a2"
+    },
+    {
+      "path": "meal_management/catalog.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "bcd4106ca3149b4149b34c0e2628209365064c08528a02da844f5044cad5db4a",
+      "export_sha256": "bcd4106ca3149b4149b34c0e2628209365064c08528a02da844f5044cad5db4a"
+    },
+    {
+      "path": "meal_management/catalog_git.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "a19b000c566f33ad870e257af6e3ebfe1a5c2bddf1428bfd772663bf599f059c",
+      "export_sha256": "486c39a068c12129711e863882887810aa7e7799fd8dcb90bdc92be260effaaf"
+    },
+    {
+      "path": "meal_management/journal.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "8d6b97be73faaadc8671830d103d8089e15cde657804f520500a75144d42bf8d",
+      "export_sha256": "8d6b97be73faaadc8671830d103d8089e15cde657804f520500a75144d42bf8d"
+    },
+    {
+      "path": "meal_management/reporting.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "bf1d6d0d21a60991630b75a09b22b54ac0e566bc838fd8263cf7ca0900cc712c",
+      "export_sha256": "bf1d6d0d21a60991630b75a09b22b54ac0e566bc838fd8263cf7ca0900cc712c"
+    },
+    {
+      "path": "meal_management/statistics.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "ed09167dc74acc6446efb5f3a51886b98eee956a2d0da8564d750d3fabf9d61b",
+      "export_sha256": "ed09167dc74acc6446efb5f3a51886b98eee956a2d0da8564d750d3fabf9d61b"
+    },
+    {
+      "path": "tests/test_meal_harness.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "aa971d4f12d6d286effaaccdec972c318fc95ccc00c28c0d0e23f04796014fd3",
+      "export_sha256": "fa3e933fa939eea0d13ce85e7a7bbaf165449c545bc779e378f73b93fbeedb61"
+    },
+    {
+      "path": "tests/test_meal_statistics.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "224be94e6043fc097f3144fdb311c952015c7304d7d2538419c1115a3ad4fc06",
+      "export_sha256": "717076c0830b2bffcc50decaf85220b30d1269b4ab86e71bb9414ad5101bc846"
+    },
+    {
+      "path": "tests/test_food_catalog_git.py",
+      "source_group": "reviewed meal domain CLI",
+      "source_sha256": "94a77e62c881188e3f8def155c088cc26ab9e3afd07d44e938dd6ed196fd5333",
+      "export_sha256": "b475e78a24833e4f2b22c7108c4f364a9a7a6c7b7ef72a4498ab2638818deb0b"
+    }
+  ]
+}

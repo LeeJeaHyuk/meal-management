@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.env
+*.env
+*.sqlite*
+credentials/
+profiles/
+workspaces/
+fixtures/
+reports/
+*.log
