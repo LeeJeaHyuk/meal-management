@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .catalog import UNITS, canonical, data_path, iso_date, number
+from .intake import validate_provided
 
 
 def timestamp(value):
@@ -46,11 +47,14 @@ def validated(payload):
         if not isinstance(components, list):
             raise ValueError("invalid_components")
         for component in components:
-            if not isinstance(component, dict) or set(component) != {"nutrition_ref", "amount", "unit", "certainty"}:
+            if (not isinstance(component, dict)
+                    or not {"nutrition_ref", "amount", "unit", "certainty"} <= set(component)
+                    or set(component) - {"nutrition_ref", "amount", "unit", "certainty", "provided_nutrients", "provided_basis"}):
                 raise ValueError("invalid_component")
             if component["unit"] not in UNITS or component["certainty"] not in {"confirmed", "estimated"}:
                 raise ValueError("invalid_component")
             number(component["amount"], positive=True)
+            validate_provided(component)
             ref = component["nutrition_ref"]
             if not isinstance(ref, str) or len(ref) != 64 or any(x not in "0123456789abcdef" for x in ref):
                 raise ValueError("invalid_nutrition_ref")

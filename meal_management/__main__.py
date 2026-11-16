@@ -1,10 +1,14 @@
 """JSON-in/JSON-out CLI for local agents; no model or messenger calls. Catalog sync fetches only approved Git data."""
 import argparse
+import hashlib
 import json
 import sqlite3
 import subprocess
 import sys
-from .catalog import Catalog
+from .catalog import Catalog, canonical, validate_record
+from .composition import compose
+from .nutrients import load_registry
+from .assessment import assess
 from .catalog_git import check_directory, sync_catalog
 from .journal import Journal
 from .reporting import build, markdown
@@ -22,7 +26,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--journal", help="Explicit local private SQLite path; never in code Git")
     parser.add_argument("--catalog", help="Explicit public nutrition directory; never in code Git")
+    parser.add_argument("--nutrient-definitions", help="Explicit nutrient metadata JSON, never executable plugins")
     sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("nutrients")
+    assessment = sub.add_parser("assess")
+    assessment.add_argument("--event-id", required=True)
     sub.add_parser("init")
     sub.add_parser("record")
     show = sub.add_parser("show")
@@ -36,6 +44,8 @@ def main(argv=None):
     revise.add_argument("--expected-revision", required=True, type=int)
     revise.add_argument("--revision-key", required=True)
     sub.add_parser("catalog-put")
+    sub.add_parser("catalog-compose", help="Compose references and amounts without catalog writes")
+    sub.add_parser("catalog-validate", help="Validate stdin record and compute ref without any catalog write")
     check = sub.add_parser("catalog-check")
     check.add_argument("--directory", required=True)
     sync = sub.add_parser("catalog-sync")
@@ -48,6 +58,7 @@ def main(argv=None):
     report.add_argument("--start", required=True)
     report.add_argument("--end", required=True)
     report.add_argument("--format", choices=["json", "markdown"], default="json")
+    report.add_argument("--nutrients", help="Comma-separated extra nutrient IDs; core four are always included")
     stats = sub.add_parser("stats")
     stats.add_argument("--start", required=True)
     stats.add_argument("--end", required=True)
@@ -55,6 +66,7 @@ def main(argv=None):
     stats.add_argument("--svg-view", choices=["summary", "daily"], default="summary")
     stats.add_argument("--format", choices=["json", "html", "svg"], default="html")
     stats.add_argument("--energy-profile", help="Explicit local profile file, or - for stdin")
+    stats.add_argument("--nutrients", help="Comma-separated extra nutrient IDs; private output only")
     claim = sub.add_parser("delivery-claim")
     claim.add_argument("--report-hash", required=True)
     claim.add_argument("--recipient-key", required=True)
@@ -64,12 +76,23 @@ def main(argv=None):
     finish.add_argument("--message-id")
     args = parser.parse_args(argv)
     try:
-        if args.command == "catalog-check":
-            result = check_directory(args.directory)
+        registry = load_registry(args.nutrient_definitions)
+        if args.command == "nutrients":
+            result = registry.document()
+        elif args.command == "catalog-compose":
+            record = compose(payload(), registry)
+            result = {"valid": True, "nutrition_ref": hashlib.sha256(canonical(record).encode()).hexdigest(),
+                      "record": record, "stored": False}
+        elif args.command == "catalog-validate":
+            record = validate_record(payload(), registry)
+            result = {"valid": True, "nutrition_ref": hashlib.sha256(canonical(record).encode()).hexdigest(),
+                      "record": record, "stored": False}
+        elif args.command == "catalog-check":
+            result = check_directory(args.directory, registry)
         elif args.command.startswith("catalog-"):
             if not args.catalog:
                 raise ValueError("catalog_path_required")
-            catalog = Catalog(args.catalog)
+            catalog = Catalog(args.catalog, registry)
             if args.command == "catalog-put":
                 result = catalog.put(payload())
             elif args.command == "catalog-sync":
@@ -86,6 +109,10 @@ def main(argv=None):
                 result = journal.init()
             elif args.command == "record":
                 result = journal.record(payload())
+            elif args.command == "assess":
+                if not args.catalog:
+                    raise ValueError("catalog_path_required")
+                result = assess(journal.show(args.event_id), Catalog(args.catalog, registry))
             elif args.command == "show":
                 result = journal.show(args.event_id, args.history)
             elif args.command == "list":
@@ -95,7 +122,8 @@ def main(argv=None):
             elif args.command in {"report", "stats"}:
                 if not args.catalog:
                     raise ValueError("catalog_path_required")
-                result = build(journal, Catalog(args.catalog), args.start, args.end, include_statistics=args.command == "stats")
+                result = build(journal, Catalog(args.catalog, registry), args.start, args.end, include_statistics=args.command == "stats",
+                               nutrients=args.nutrients.split(",") if args.nutrients else None)
                 if args.command == "stats":
                     if args.format == "svg" and args.mode != "public":
                         raise ValueError("public_mode_required_for_svg")

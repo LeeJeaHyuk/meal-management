@@ -6,7 +6,9 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import urlparse
 
-NUTRIENTS = {"energy_kcal", "protein_g", "carbohydrate_g", "fat_g", "fiber_g", "sodium_mg", "sugars_g", "saturated_fat_g"}
+from .nutrients import DEFAULT_REGISTRY
+
+NUTRIENTS = DEFAULT_REGISTRY.ids
 UNITS = {"g", "ml", "serving"}
 
 
@@ -53,8 +55,30 @@ def data_path(path):
     return path
 
 
-def validate_record(record):
-    allowed = {"food_id", "name", "brand", "preparation", "basis", "nutrients", "source", "review_state", "uncertainty"}
+def validate_components(components):
+    if not isinstance(components, list) or not 1 <= len(components) <= 32:
+        raise ValueError("composition_components_required")
+    for part in components:
+        if (not isinstance(part, dict) or set(part) - {"nutrition_ref", "amount", "unit", "amount_range"}
+                or not {"nutrition_ref", "amount", "unit"} <= set(part)):
+            raise ValueError("invalid_composition_component")
+        ref = part["nutrition_ref"]
+        if not isinstance(ref, str) or len(ref) != 64 or any(c not in "0123456789abcdef" for c in ref):
+            raise ValueError("invalid_composition_ref")
+        amount = number(part["amount"], positive=True)
+        if not isinstance(part["unit"], str) or part["unit"] not in UNITS:
+            raise ValueError("invalid_composition_unit")
+        if "amount_range" in part:
+            bounds = part["amount_range"]
+            if (not isinstance(bounds, dict) or set(bounds) != {"low", "high", "reason"}
+                    or not isinstance(bounds["reason"], str) or not bounds["reason"].strip()
+                    or not number(bounds["low"]) <= amount <= number(bounds["high"])):
+                raise ValueError("invalid_component_amount_range")
+
+
+def validate_record(record, registry=None):
+    registry = registry or DEFAULT_REGISTRY
+    allowed = {"food_id", "name", "brand", "preparation", "basis", "nutrients", "source", "review_state", "uncertainty", "components"}
     if not isinstance(record, dict) or set(record) - allowed:
         raise ValueError("invalid_catalog_fields")
     for key in ("food_id", "name"):
@@ -63,15 +87,18 @@ def validate_record(record):
     for key in ("brand", "preparation"):
         if key in record and not isinstance(record[key], str):
             raise ValueError("invalid_catalog_text_metadata")
+    if "components" in record:
+        validate_components(record["components"])
     basis = record.get("basis", {})
     if not isinstance(basis, dict) or set(basis) != {"quantity", "unit"} or basis["unit"] not in UNITS:
         raise ValueError("invalid_nutrition_basis")
     number(basis["quantity"], positive=True)
     nutrients = record.get("nutrients")
-    if not isinstance(nutrients, dict) or not nutrients or set(nutrients) - NUTRIENTS:
+    if not isinstance(nutrients, dict) or not nutrients or set(nutrients) - registry.ids:
         raise ValueError("invalid_nutrients")
-    for value in nutrients.values():
+    for key, value in nutrients.items():
         number(value)
+        registry.validate_value(key, value)
     if "uncertainty" in record:
         uncertainty = record["uncertainty"]
         if (not isinstance(uncertainty, dict)
@@ -116,11 +143,12 @@ def validate_record(record):
 
 
 class Catalog:
-    def __init__(self, root):
+    def __init__(self, root, registry=None):
         self.root = data_path(root)
+        self.registry = registry or DEFAULT_REGISTRY
 
     def put(self, record):
-        validate_record(record)
+        validate_record(record, self.registry)
         text = canonical(record)
         ref = hashlib.sha256(text.encode()).hexdigest()
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -145,7 +173,7 @@ class Catalog:
             raise ValueError("nutrition_ref_missing") from None
         if hashlib.sha256(text.rstrip("\n").encode()).hexdigest() != ref:
             raise ValueError("catalog_integrity_mismatch")
-        return json.loads(text)
+        return validate_record(json.loads(text), self.registry)
 
     def find(self, query):
         if not isinstance(query, str) or not query.strip():

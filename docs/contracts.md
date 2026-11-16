@@ -25,9 +25,11 @@ source(url/observed_on/publisher), review_state(unreviewed/verified).
 brand, preparation 및 근거 evidence_sha256/evidence_quote는 선택입니다.
 개인 식사·체중·채팅 metadata는 사전 항목에 넣지 않습니다.
 
-nutrients:
-energy_kcal, protein_g, carbohydrate_g, fat_g, fiber_g, sodium_mg,
-sugars_g, saturated_fat_g 중 원문에서 확인한 항목만 제공합니다.
+nutrients의 기본 정의는 energy_kcal, carbohydrate_g, protein_g, fat_g,
+fiber_g, sodium_mg, sugars_g, saturated_fat_g입니다. 원문에서 확인한 값 또는
+허용된 추정 근거가 있는 값만 제공합니다. --nutrient-definitions의 명시적 정의로
+새 ID/단위/검증 범위를 추가할 수 있습니다. catalog-put/get/find/check/sync는
+같은 정의를 사용하며 기존 ID는 덮어쓸 수 없습니다.
 사전 입력에서 미확인 영양소는 해당 필드를 생략하고 0으로 채우지 않습니다.
 원장 집계 결과의 결측값은 null로 반환될 수 있습니다.
 추정 참조는 uncertainty.kind=estimated, reason, ranges(low/high)를 지정합니다.
@@ -58,3 +60,22 @@ claimed=true일 때만 외부 adapter가 실제 발송합니다.
 delivery-finish는 sent/failed/unknown과 실제 영수증을 남깁니다.
 확실한 failed만 정해진 횟수 안에서 재시도하며 unknown을 자동 재발송하지 않습니다.
 이 라이브러리는 Telegram/OpenBot API를 호출하지 않습니다.
+
+## 기록 준비 상태와 기본 영양 보고
+
+record 성공은 원문 저장입니다. assess --event-id는 음식 참조·섭취량·단위와 기본
+네 영양값의 준비 상태를 확인하며 원장 수정이나 원문 재해석을 수행하지 않습니다.
+report/stats는 기본 네 항목과 --nutrients로 선택한 추가 항목을 nutrient_summary에
+반환합니다. 각 항목에 확정/추정 부분합, 포함·누락·미해결 성분 수, 날짜 미확인 제외 수와
+이유를 남깁니다. 계산 불가능한 값은 null이며 실제 관측된 0과 구분합니다.
+기본 네 값이나 요청한 추가 값이 부족하면 calculation_state는 partial_or_pending입니다.
+ready_for_recorded_meals도 원문에서 누락된 성분이나 미기록된 하루 전체를 보증하지 않습니다.
+설정/호출 예시는 [확장 방법](extensions.md)을 따릅니다.
+
+## Intake-provided nutrient values
+
+A journal component may include provided_nutrients and provided_basis together.
+These are user-declared values for that basis, stored only in the intake event.
+They override those nutrient contributions after quantity scaling. Unspecified
+nutrients still require a public reference; they are not zero. Basis units must
+match the component. Shared catalog records and factual review are unchanged.

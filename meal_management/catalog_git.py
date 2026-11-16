@@ -30,18 +30,18 @@ def run_git(cache, *args, stdin=None, allowed=(0,), env=None):
     return result
 
 
-def decode_record(path, content, state):
+def decode_record(path, content, state, registry=None):
     match = re.fullmatch(r"(?:records|proposals)/([0-9a-f]{64})\.json", path)
     if not match or len(content) > MAX_RECORD_BYTES:
         raise ValueError("invalid_catalog_record_path_or_size")
-    record = validate_record(json.loads(content))
+    record = validate_record(json.loads(content), registry)
     ref = hashlib.sha256(canonical(record).encode()).hexdigest()
     if ref != match[1] or record["review_state"] != state:
         raise ValueError("catalog_record_hash_or_review_mismatch")
     return ref, record
 
 
-def check_directory(directory):
+def check_directory(directory, registry=None):
     directory = data_path(directory)
     if json.loads((directory / "catalog.json").read_text(encoding="utf-8")) != MANIFEST:
         raise ValueError("unsupported_food_catalog")
@@ -57,7 +57,7 @@ def check_directory(directory):
             path = data_path(path)
             if not path.is_file() or path.stat().st_size > MAX_RECORD_BYTES:
                 raise ValueError("invalid_catalog_entry")
-            decode_record(group + "/" + path.name, path.read_bytes(), state)
+            decode_record(group + "/" + path.name, path.read_bytes(), state, registry)
             count[group] += 1
             if sum(count.values()) > MAX_RECORDS:
                 raise ValueError("catalog_snapshot_too_large")
@@ -126,7 +126,7 @@ def import_snapshot(cache, commit, catalog):
     tree = entries(cache, commit)
     if previous and not {path for path, _ in entries(cache, previous)} <= {path for path, _ in tree}:
         raise ValueError("historical_catalog_records_removed")
-    records = [decode_record(path, content, "verified")
+    records = [decode_record(path, content, "verified", catalog.registry)
                for (path, _), content in zip(tree, blobs(cache, [sha for _, sha in tree]))]
     # Validate the entire snapshot before adding any immutable local record.
     added = 0

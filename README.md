@@ -56,8 +56,10 @@ record / revise / catalog-put는 stdin으로 JSON 객체 하나를 받습니다.
 
 | 명령 | 용도 |
 | --- | --- |
-| record / show / list | 원문 보존, 식사·체중 구분, 조회 |
+| nutrients / assess | 영양항목 정의 조회·저장된 음식/섭취량/기본 영양값 준비 상태 |\n| record / show / list | 원문 보존, 식사·체중 구분, 조회 |
 | revise | 원래 식별자를 보존한 정정, 판 번호 충돌 방지 |
+| catalog-compose | 구성품 ref·수량으로 열량·영양값과 추정 범위 합산, 사전 쓰기 없음 |
+| catalog-validate | stdin 값 검사·예상 ref 계산, 사전 쓰기 없음 |
 | catalog-put / find / get | 공개 영양 후보·검토된 참조의 내용 hash 연결 |
 | catalog-check / sync | 사전 구조 검사와 승인 snapshot의 불변 참조 동기화 |
 | report | 확정·추정 부분합, 연결되지 않은 항목과 결측 사유 |
@@ -84,5 +86,5 @@ git submodule update --init --recursive
 설치 방식 또는 module path adapter로 호출하며 연결 예시는
 [오케스트라 연결](docs/orchestrator-integration.md)에 있습니다.
 
-[새 에이전트 시작](docs/agent-start.md) · [보안 경계](SECURITY.md) ·
+[영양항목·도구 확장](docs/extensions.md) · [새 에이전트 시작](docs/agent-start.md) · [보안 경계](SECURITY.md) ·
 [설계·검증 범위](docs/design.md) · [MIT](LICENSE)

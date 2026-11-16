@@ -138,6 +138,8 @@ def build(report, profile=None, mode="private"):
         "energy_unit": "kcal", "weight_unit": "kg", "energy_estimate": energy,
         "source_report_hash": report.get("report_hash"),
         "coverage": report.get("nutrition_coverage", {}),
+        "nutrient_summary": report.get("nutrient_summary", []),
+        "calculation_state": report.get("calculation_state", "partial_or_pending"),
         "notes": [
             "섭취 열량은 영양정보가 연결된 기록의 부분합입니다.",
             "미기록·미측정 구간은 빈칸으로 표시합니다.",
@@ -477,6 +479,20 @@ def render_html(statistics):
             quality.append("추정 포함")
         cells.append(" · ".join(quality) or "계산 가능한 항목 기준")
         rows.append("<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>")
+    nutrition = ""
+    if not public:
+        nutrient_rows = []
+        for item in statistics.get("nutrient_summary", []):
+            cells = [escape(item["label"])]
+            for key in ("total_partial", "confirmed_partial", "estimated_partial"):
+                value = item[key]
+                cells.append("미확인" if value is None else escape(str(number(value)) + " " + item["unit"]))
+            cells.append(escape(item["state"] + (" · " + ", ".join(item["missing_reasons"]) if item["missing_reasons"] else "")))
+            nutrient_rows.append("<tr>" + "".join("<td>" + cell + "</td>" for cell in cells) + "</tr>")
+        nutrition = ('<section class="chart"><h2>열량·탄단지와 선택 영양항목</h2>'
+                     '<p>기록된 성분의 부분합입니다. 누락된 값은 0이 아니며 부분/미확인 상태를 함께 봅니다.</p>'
+                     '<div class="table-scroll"><table><thead><tr><th>항목</th><th>기록 부분합</th><th>확정 부분합</th><th>추정 부분합</th><th>상태</th></tr></thead><tbody>'
+                     + "".join(nutrient_rows) + "</tbody></table></div></section>")
     notes = "".join(f"<li>{escape(note)}</li>" for note in statistics["notes"])
     return f'''<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -495,7 +511,7 @@ table{{border-collapse:collapse;width:100%;font-size:13px}}td,th{{text-align:rig
 .table-scroll{{overflow-x:auto}}summary{{cursor:pointer;font-weight:600}}ul{{padding-left:20px}}@media(max-width:600px){{main{{padding:20px 12px}}.chart,.details{{padding:14px}}h1{{font-size:23px}}}}
 </style></head><body><main>
 <header><div><h1>식사·체중 통계</h1><p class="meta">{heading} · {escape(period)}</p></div>{export}</header>
-<p>{escape(estimate_text)}</p>{composition}{energy}{change}{daily_composition}{weight}
+{nutrition}<p>{escape(estimate_text)}</p>{composition}{energy}{change}{daily_composition}{weight}
 <details class="details"><summary>날짜별 값 보기</summary><div class="table-scroll"><table>
 <thead><tr>{table_header}</tr></thead>
 <tbody>{"".join(rows)}</tbody></table></div></details><ul>{notes}</ul>
